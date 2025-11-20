@@ -13,19 +13,19 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// 使用 gemini-1.5-flash
+// 用 gemini-1.5-flash（新版 v1 API）
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
 });
 
 const SYSTEM_PROMPT = `
-你是一個「AI 助理」，會協助使用者聊天、也會解析行事曆圖片。
-請使用自然、親切的繁體中文回覆。
-如果有圖片，請先描述圖片內容，再根據問題回答。
+你是一個「AI 助理」，會協助使用者聊天，也會解析行事曆截圖。
+回答請用自然的繁體中文。
+請先描述圖片，再回答問題。
 `;
 
-// POST /api/chat
 app.post("/api/chat", upload.single("image"), async (req, res) => {
   try {
     const userMessage = req.body.message || "";
@@ -43,18 +43,18 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
     if (imageFile) {
       parts.push({
         inlineData: {
-          mimeType: imageFile.mimetype,
           data: imageFile.buffer.toString("base64"),
+          mimeType: imageFile.mimetype,
         },
       });
     }
 
+    // ❗ 新版 v1 用法
     const result = await model.generateContent({
-      contents: [{ role: "user", parts }]
+      contents: [{ role: "user", parts }],
     });
 
-    const reply = result.response.text();
-    res.json({ reply });
+    res.json({ reply: result.response.text() });
 
   } catch (error) {
     console.error("❌ LLM Error:", error);
@@ -62,7 +62,6 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
   }
 });
 
-// Render / Railway port
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`AI Assistant backend listening on port ${PORT}`);
