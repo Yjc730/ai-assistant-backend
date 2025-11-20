@@ -15,7 +15,8 @@ app.use(express.json());
 
 // 用 GEMINI_API_KEY 建立模型
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+
 
 const SYSTEM_PROMPT = `
 你是一個「AI 助理」，專門幫使用者聊天與分析行事曆圖片。
