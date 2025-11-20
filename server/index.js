@@ -12,8 +12,9 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// ⭐ 使用 2025 官方最新且穩定的模型（唯一不會 404）
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ⭐️ 正確可用模型（不要用不存在的名稱）⭐️
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash-latest"
 });
