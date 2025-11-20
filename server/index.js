@@ -16,7 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ⭐️ 正確可用模型（不要用不存在的名稱）⭐️
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash-latest"
+  model: "gemini-1.5-flash"
 });
 
 const SYSTEM_PROMPT = `
