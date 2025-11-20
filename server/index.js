@@ -12,10 +12,10 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// 使用正確模型
+// ⭐ 使用 2025 官方最新且穩定的模型（唯一不會 404）
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+  model: "gemini-1.5-flash-latest"
 });
 
 const SYSTEM_PROMPT = `
