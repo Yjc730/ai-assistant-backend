@@ -1,11 +1,10 @@
-// server/index.js
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const dotenv = require("dotenv");
-dotenv.config();
-
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+dotenv.config();
 
 const app = express();
 const upload = multer();
@@ -13,17 +12,14 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// 用 gemini-1.5-flash（新版 v1 API）
+// 使用新版 Gemini 1.5 Flash
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
 const model = genAI.getGenerativeModel({
   model: "gemini-1.5-flash",
 });
 
 const SYSTEM_PROMPT = `
-你是一個「AI 助理」，會協助使用者聊天，也會解析行事曆截圖。
-回答請用自然的繁體中文。
-請先描述圖片，再回答問題。
+你是一個「AI 助理」，會幫忙看行事曆截圖、整理空檔。請用繁體中文回答。
 `;
 
 app.post("/api/chat", upload.single("image"), async (req, res) => {
@@ -35,10 +31,7 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: "缺少訊息或圖片" });
     }
 
-    const parts = [
-      { text: SYSTEM_PROMPT },
-      { text: userMessage }
-    ];
+    const parts = [{ text: SYSTEM_PROMPT }, { text: userMessage }];
 
     if (imageFile) {
       parts.push({
@@ -49,20 +42,24 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       });
     }
 
-    // ❗ 新版 v1 用法
     const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
+      contents: [
+        {
+          role: "user",
+          parts: parts,
+        },
+      ],
     });
 
-    res.json({ reply: result.response.text() });
+    const replyText = result.response.text();
+    res.json({ reply: replyText });
 
-  } catch (error) {
-    console.error("❌ LLM Error:", error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "LLM 呼叫失敗" });
   }
 });
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`AI Assistant backend listening on port ${PORT}`);
-});
+  console.log(`
