@@ -8,58 +8,61 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 dotenv.config();
 
 const app = express();
-const upload = multer(); // 把上傳的檔案放在記憶體
+const upload = multer(); // memory storage
 
 app.use(cors());
 app.use(express.json());
 
-// 用 GEMINI_API_KEY 建立模型
+// 🚀 使用新版 Google Gemini 1.5 Flash（支援圖片）
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash"
+});
 
-
+// 系統提示
 const SYSTEM_PROMPT = `
-你是一個「AI 助理」，專門幫使用者聊天與分析行事曆圖片。
-回答時請使用繁體中文，語氣自然一點。
-如果有圖片就先說你看到了什麼，再根據文字問題做整理。
+你是一個 AI 助理，可以聊天並分析行事曆圖片。
+請用自然、友善的繁體中文回答。
+如果有圖片，請先描述你看到的內容，再整理出使用者想要的時段資訊。
 `;
 
-// 這個就是前端會呼叫的 API：POST /api/chat
 app.post("/api/chat", upload.single("image"), async (req, res) => {
   try {
     const userMessage = req.body.message || "";
-    const imageFile = req.file; // 可選的圖片
+    const file = req.file;
 
-    if (!userMessage && !imageFile) {
+    if (!userMessage && !file) {
       return res.status(400).json({ error: "缺少訊息或圖片" });
     }
 
-    const parts = [{ text: SYSTEM_PROMPT }, { text: userMessage }];
+    const parts = [
+      { text: SYSTEM_PROMPT },
+      { text: userMessage }
+    ];
 
-    // 如果有圖片就一併丟給 Gemini
-    if (imageFile) {
+    if (file) {
       parts.push({
         inlineData: {
-          data: imageFile.buffer.toString("base64"),
-          mimeType: imageFile.mimetype,
-        },
+          data: file.buffer.toString("base64"),
+          mimeType: file.mimetype
+        }
       });
     }
 
     const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
+      contents: [{ role: "user", parts }]
     });
 
-    const replyText = result.response.text();
-    res.json({ reply: replyText });
+    res.json({ reply: result.response.text() });
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ LLM Error:", err);
     res.status(500).json({ error: "LLM 呼叫失敗" });
   }
 });
 
-// Render/Railway 會自己給 PORT，用環境變數拿
+// Render 自動給 PORT
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`AI Assistant backend listening on port ${PORT}`);
+  console.log("AI Assistant backend running on port", PORT);
 });
