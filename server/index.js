@@ -12,16 +12,14 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// ⭐ 正確可用模型：gemini-1.5-flash-001（支援圖片）
+// 使用正確模型名稱
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash-001"
+  model: "gemini-1.5-flash-latest"
 });
 
 const SYSTEM_PROMPT = `
-你是一個「AI 助理」，專門幫使用者聊天與分析行事曆圖片。
-回答時請使用繁體中文，語氣自然。
-如果有圖片就先描述圖片內容，再根據問題分析。
+你是一個 AI 助理...
 `;
 
 app.post("/api/chat", upload.single("image"), async (req, res) => {
@@ -38,7 +36,6 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       { text: userMessage }
     ];
 
-    // 圖片處理
     if (imageFile) {
       parts.push({
         inlineData: {
@@ -48,7 +45,6 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       });
     }
 
-    // ⭐ 新版 generateContent
     const result = await model.generateContent({
       contents: [{ role: "user", parts }],
     });
@@ -62,7 +58,6 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
   }
 });
 
-// 啟動 server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`AI Assistant backend listening on port ${PORT}`);
