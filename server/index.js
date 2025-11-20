@@ -3,35 +3,35 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const dotenv = require("dotenv");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 dotenv.config();
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 const app = express();
-const upload = multer(); // memory storage
+const upload = multer();
 
 app.use(cors());
 app.use(express.json());
 
-// 🚀 使用新版 Google Gemini 1.5 Flash（支援圖片）
+// 使用 gemini-1.5-flash
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
+  model: "gemini-1.5-flash",
 });
 
-// 系統提示
 const SYSTEM_PROMPT = `
-你是一個 AI 助理，可以聊天並分析行事曆圖片。
-請用自然、友善的繁體中文回答。
-如果有圖片，請先描述你看到的內容，再整理出使用者想要的時段資訊。
+你是一個「AI 助理」，會協助使用者聊天、也會解析行事曆圖片。
+請使用自然、親切的繁體中文回覆。
+如果有圖片，請先描述圖片內容，再根據問題回答。
 `;
 
+// POST /api/chat
 app.post("/api/chat", upload.single("image"), async (req, res) => {
   try {
     const userMessage = req.body.message || "";
-    const file = req.file;
+    const imageFile = req.file;
 
-    if (!userMessage && !file) {
+    if (!userMessage && !imageFile) {
       return res.status(400).json({ error: "缺少訊息或圖片" });
     }
 
@@ -40,12 +40,12 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       { text: userMessage }
     ];
 
-    if (file) {
+    if (imageFile) {
       parts.push({
         inlineData: {
-          data: file.buffer.toString("base64"),
-          mimeType: file.mimetype
-        }
+          mimeType: imageFile.mimetype,
+          data: imageFile.buffer.toString("base64"),
+        },
       });
     }
 
@@ -53,16 +53,17 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
       contents: [{ role: "user", parts }]
     });
 
-    res.json({ reply: result.response.text() });
+    const reply = result.response.text();
+    res.json({ reply });
 
-  } catch (err) {
-    console.error("❌ LLM Error:", err);
+  } catch (error) {
+    console.error("❌ LLM Error:", error);
     res.status(500).json({ error: "LLM 呼叫失敗" });
   }
 });
 
-// Render 自動給 PORT
+// Render / Railway port
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log("AI Assistant backend running on port", PORT);
+  console.log(`AI Assistant backend listening on port ${PORT}`);
 });
