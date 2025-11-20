@@ -1,4 +1,3 @@
-// server/index.js
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -13,15 +12,11 @@ const upload = multer();
 app.use(cors());
 app.use(express.json());
 
-// 使用正確模型名稱
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash-latest"  // <<< 修正這裡！！
-});
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const SYSTEM_PROMPT = `
-你是一個 AI 助理，會分析聊天內容與行事曆圖片。
-請使用繁體中文回答。
+你是一個 AI 助理...
 `;
 
 app.post("/api/chat", upload.single("image"), async (req, res) => {
@@ -43,14 +38,25 @@ app.post("/api/chat", upload.single("image"), async (req, res) => {
         inlineData: {
           data: imageFile.buffer.toString("base64"),
           mimeType: imageFile.mimetype,
-        }
+        },
       });
     }
 
     const result = await model.generateContent({
-      contents: [
-        { role: "user", parts }
-      ]
+      contents: [{ role: "user", parts }],
     });
 
     const replyText = result.response.text();
+    res.json({ reply: replyText });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "LLM 呼叫失敗" });
+  }
+});  // ← 這裡要有！你可能少了這個
+
+// ⭐️ 你的程式可能少了這一行結尾 👇
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`AI Assistant backend listening on port ${PORT}`);
+});
